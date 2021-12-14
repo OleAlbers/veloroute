@@ -52,7 +52,7 @@ let zoomedInOnce = false;
 function renderIndicator() {
   if (state.lon == "" || state.lat == "") return;
   const lngLat = new mapboxgl.LngLat(state.lon, state.lat);
-  const mapActive = map.isMoving() || map.isZooming();
+  // const mapActive = map.isMoving() || map.isZooming();
 
   if (!indicator) {
     const rotated = genDiv('indicator-rotate');
@@ -63,36 +63,40 @@ function renderIndicator() {
     indicator = new mapboxgl.Marker(el)
       .setLngLat(lngLat)
       .addTo(map);
+    window.indicator = indicator;
   }
 
-  const videoPlaying = video && !video.paused;
-  const dist = indicator.getLngLat().distanceTo(lngLat);
-  const animate = !mapActive && dist < 50 && ((videoPlaying && videoWasPlaying) || dist < 10)
+  // const videoPlaying = video && !video.paused;
+  // const dist = indicator.getLngLat().distanceTo(lngLat);
+  // const animate = !mapActive && dist < 50 && ((videoPlaying && videoWasPlaying) || dist < 10)
 
   // only update animation status as needed to avoid style recalculations
-  if (animate != !!indicatorAnimateTimer) indicator.getElement().classList.toggle("animate", animate);
-  if (indicatorAnimateTimer) {
-    clearTimeout(indicatorAnimateTimer);
-    indicatorAnimateTimer = null;
-  }
-  if (animate) indicatorAnimateTimer = setTimeout(disableIndicatorAnimation, 300);
+  // if (animate != !!indicatorAnimateTimer) indicator.getElement().classList.toggle("animate", animate);
+  // if (indicatorAnimateTimer) {
+  //   clearTimeout(indicatorAnimateTimer);
+  //   indicatorAnimateTimer = null;
+  // }
+  // if (animate) indicatorAnimateTimer = setTimeout(disableIndicatorAnimation, 300);
 
-  videoWasPlaying = videoPlaying;
+  // videoWasPlaying = videoPlaying;
 
   const shortest = closestEquivalentAngle(indicator.getRotation(), state.bearing);
+
   window.requestAnimationFrame(() => {
-    indicator.setRotation(shortest);
+    const point = map.project(lngLat);
     indicator.setLngLat(lngLat);
+    indicator.setRotation(shortest);
+    indicator.getElement().style.transform = `translate(-50% , -50%) translate(${point.x}px, ${point.y}px) rotateZ(${shortest}deg)`;
   });
 
-  if (!mapActive && !zoomedInOnce && videoPlaying && prevBoundsTs === "") {
-    zoomedInOnce = true;
-    const zoom = Math.max(map.getZoom(), 14);
-    map.flyTo({
-      center: lngLat,
-      zoom: zoom
-    });
-  }
+  // if (!mapActive && !zoomedInOnce && videoPlaying && prevBoundsTs === "") {
+  //   zoomedInOnce = true;
+  //   const zoom = Math.max(map.getZoom(), 14);
+  //   map.flyTo({
+  //     center: lngLat,
+  //     zoom: zoom
+  //   });
+  // }
 }
 
 const closestEquivalentAngle = (from, to) => {
@@ -354,6 +358,15 @@ window.mapUpdateIndicatorFromVideo = (vid, coords) => {
   video = vid;
   videoCoords = coords;
   updateVideoIndicator();
+}
+
+window.updateIndicatorPos = (lat, lon, bear) => {
+  state.lon = lon
+  state.lat = lat;
+
+  state.bearing = bear
+  renderIndicator();
+  ensureIndicatorInView();
 }
 
 function toRad(degrees) {

@@ -52,6 +52,8 @@
       </p>
     <% end %>
 
+    <div  phx-update="ignore"  id="dump"></div>
+
     <%# explicity name params so that live tracking works %>
     <%#  Phoenix.View.render(VelorouteWeb.ArticleView, @current_page, %{
       search_bounds: @search_bounds,

@@ -41,6 +41,7 @@ defmodule VelorouteWeb.Router do
 
     # note: must be manually adjusted in robots.txt
     get "/images/thumbnails/:hash/:timestamp", ImageExtractController, :image
+    get "/webvtt/:hash", WebVTTController, :webvtt
 
     post "/js_errors", PageController, :js_errors
   end

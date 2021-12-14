@@ -95,7 +95,8 @@ defmodule Video.Timestamp do
     |> from_milliseconds()
   end
 
-  defp pad_left(int, num \\ 2), do: String.pad_leading("#{int}", num, "0")
+  defp pad_left(int, num \\ 2), do: String.pad_leading(to_string(int), num, "0")
+  # defp pad_left(int, num \\ 2), do: String.pad_leading("#{int}", num, "0")
 
   @doc """
   Try to parse a timestamp. It returns the timestamp on success, or nil

@@ -62,6 +62,8 @@ function attachHlsErrorHandler(obj, Hls) {
   });
 }
 
+let track = null;
+
 function updateVideoElement() {
   if (!state.videoHash) return;
   console.debug('trying to play video for: ', state.videoHash)
@@ -72,7 +74,7 @@ function updateVideoElement() {
     console.debug('native hls, doing nothing?')
   } else if (window.hls === false || typeof Promise === "undefined") {
     console.debug('hls.js not supported, using fallback')
-  } else {
+  } else if (false) {
     console.debug('no native hls, trying to load hls.js')
     import('hls.js').then(Hls => {
       if (!Hls.isSupported()) return window.hls = false;
@@ -81,7 +83,6 @@ function updateVideoElement() {
 
       let options = {
         autoStartLoad: hlsAutoStartLoad || !video.paused || autoplayEnabled(),
-        enableWebVTT: false,
         lowLatencyMode: false,
         maxBufferLength: 10, // seconds
         maxMaxBufferLength: 30, // seconds
@@ -131,9 +132,17 @@ function updateVideoElement() {
     <source src="${path}stream.m3u8${time}" type="application/x-mpegURL">
     <source src="${path}fallback.webm${time}" type="video/webm; codecs=vp9">
     <source src="${path}fallback.mp4${time}" type="video/mp4; codec=avc1.64001E">
+    <track default kind="metadata" src="/webvtt/${state.videoHash}" />
     <p>Abspielen im Browser klappt wohl nicht. Du kannst das <a href="${path}fallback.mp4" target="_blank">Video herunterladen</a> und anderweitig anschauen.</p>
   `;
   video.innerHTML = innerHTML;
+  track = document.querySelector("#videoInner track")
+  track.addEventListener("cuechange", (event) => {
+    const pos = event.target.track.activeCues[0].text.split(" ");
+    window.updateIndicatorPos(pos[0], pos[1], 37);
+
+    // document.getElementById('dump').innerText = event.target.track.activeCues[0].text;
+  });
   if (autoplayEnabled()) video.load();
 }
 
@@ -283,7 +292,7 @@ function parseCoordsFromState() {
 
 function updateIndicatorPos(evt) {
   if (!videoCoords) return;
-  window.mapUpdateIndicatorFromVideo(video, videoCoords);
+  // window.mapUpdateIndicatorFromVideo(video, videoCoords);
 }
 
 const progress = document.getElementById("progress")
