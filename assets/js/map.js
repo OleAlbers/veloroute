@@ -64,6 +64,8 @@ function renderIndicator() {
       .setLngLat(lngLat)
       .addTo(map);
     window.indicator = indicator;
+
+    leAnim = window.requestAnimationFrame(bla1);
   }
 
   // const videoPlaying = video && !video.paused;
@@ -80,14 +82,14 @@ function renderIndicator() {
 
   // videoWasPlaying = videoPlaying;
 
-  const shortest = closestEquivalentAngle(indicator.getRotation(), state.bearing);
+  // const shortest = closestEquivalentAngle(indicator.getRotation(), state.bearing);
 
-  window.requestAnimationFrame(() => {
-    const point = map.project(lngLat);
-    indicator.setLngLat(lngLat);
-    indicator.setRotation(shortest);
-    indicator.getElement().style.transform = `translate(-50% , -50%) translate(${point.x}px, ${point.y}px) rotateZ(${shortest}deg)`;
-  });
+  // window.requestAnimationFrame(() => {
+  //   const point = map.project(lngLat);
+  //   indicator.setLngLat(lngLat);
+  //   indicator.setRotation(shortest);
+  //   indicator.getElement().style.transform = `translate(-50% , -50%) translate(${point.x}px, ${point.y}px) rotateZ(${shortest}deg)`;
+  // });
 
   // if (!mapActive && !zoomedInOnce && videoPlaying && prevBoundsTs === "") {
   //   zoomedInOnce = true;
@@ -361,13 +363,60 @@ window.mapUpdateIndicatorFromVideo = (vid, coords) => {
 }
 
 window.updateIndicatorPos = (lat, lon, bear) => {
-  state.lon = lon
-  state.lat = lat;
+  if (!window.indicator) {
+    state.lon = lon
+    state.lat = lat;
+    state.bearing = bear
+    renderIndicator();
+    return
 
-  state.bearing = bear
-  renderIndicator();
-  ensureIndicatorInView();
+    // ensureIndicatorInView();
+  }
+
+  if (!leAnim) leAnim = window.requestAnimationFrame(bla1)
 }
+
+
+let prevbla = null
+let counter = 0;
+let leAnim = null;
+
+function bla1(now) {
+  const track = document.querySelector("track");
+  if (!track || !track.track || !track.track.activeCues || !track.track.activeCues[0]) {
+    leAnim = window.requestAnimationFrame(bla1);
+    return
+  }
+  const pos = track.track.activeCues[0].text.split(" ");
+
+  const lngLat = new mapboxgl.LngLat(pos[1], pos[0]);
+
+  if (prevbla == pos[0]) {
+    console.log("same @ ", counter, track.track.activeCues[0].startTime, now)
+    counter++
+  } else {
+    counter = 0;
+  }
+  if (counter > 20) {
+    counter = 0;
+    prevbla = null;
+    leAnim = null;
+    return
+  }
+  prevbla = pos[0]
+
+  const point = map.project(lngLat);
+  indicator.setLngLat(lngLat);
+  indicator.setRotation(pos[2]);
+  indicator.getElement().style.transform = `translate(-50% , -50%) translate(${point.x}px, ${point.y}px) rotateZ(${pos[2]}deg)`;
+
+  leAnim = window.requestAnimationFrame(bla1)
+}
+
+window.bla1 = bla1;
+
+
+
 
 function toRad(degrees) {
   return degrees * Math.PI / 180;

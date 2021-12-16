@@ -137,12 +137,12 @@ function updateVideoElement() {
   `;
   video.innerHTML = innerHTML;
   track = document.querySelector("#videoInner track")
-  track.addEventListener("cuechange", (event) => {
-    const pos = event.target.track.activeCues[0].text.split(" ");
-    window.updateIndicatorPos(pos[0], pos[1], 37);
+  // track.addEventListener("cuechange", (event) => {
+  //   const pos = event.target.track.activeCues[0].text.split(" ");
+  //   window.updateIndicatorPos(pos[0], pos[1], pos[2]);
 
-    // document.getElementById('dump').innerText = event.target.track.activeCues[0].text;
-  });
+  //   // document.getElementById('dump').innerText = event.target.track.activeCues[0].text;
+  // });
   if (autoplayEnabled()) video.load();
 }
 

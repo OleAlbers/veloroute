@@ -20,57 +20,52 @@ defmodule VelorouteWeb.WebVTTController do
   defp convert(nil), do: "WEBVTT\n\n"
 
   defp convert(rendered) do
+    # Benchmark.flamegraph("webvtt", fn ->
     coords =
       rendered.coords()
-      |> Video.TimedPointInterpolator.segmentwise_bezier(40)
+      |> Video.TimedPointInterpolator.segmentwise_bezier(10)
       |> Geo.Smoother.by_range(1.0)
+      |> Enum.map(&format/1)
 
-    cues =
-      coords
-      |> Enum.map(fn now ->
-        "<trkpt lat='#{now.lat}' lon='#{now.lon}' time='#{now.time_offset_ms}'></trkpt>"
-      end)
-      |> Enum.join("\n")
-
-    # cues = "#{Video.Timestamp.zero} --> "
-
-    # # cues = Enum.reduce(rev, {pos, ""}, fn -> )
-
-    # cues =
-    #   rendered.coords()
-    #   |> Enum.map(fn pt -> Map.put(pt, :ts, Video.Timestamp.from_timed_point(pt)) end)
-    #   |> Enum.chunk_every(2, 1)
-    #   |> Enum.map(fn
-    #     [now, next] -> "#{now.ts} --> #{next.ts}\n#{now.lat} #{now.lon}"
-    #     [now] -> "#{now.ts} --> #{now.ts}\n#{now.lat} #{now.lon}"
-    #   end)
-    #   |> Enum.join("\n\n")
-
-    # "WEBVTT\n\n#{cues}"
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">
-    <trk>
-    <trkseg>
-      #{cues}
-    </trkseg>
-    </trk>
-    </gpx>
-
-    """
+    coords_to_webvtt(coords)
+    # end)
   end
 
-  # defp convert(rendered) do
-  #   cues =
-  #     rendered.coords()
-  #     |> Enum.map(fn pt -> Map.put(pt, :ts, Video.Timestamp.from_timed_point(pt)) end)
-  #     # |> Enum.chunk_every(2, 1)
-  #     |> Enum.map(fn
-  #       pt -> "<#{pt.ts}> #{pt.lat} #{pt.lon}"
-  #     end)
-  #     |> Enum.join("\n")
+  defp coords_to_webvtt(coords) when is_list(coords) do
+    [hd | tl] = Enum.reverse(coords)
 
-  #   total = Video.Timestamp.from_milliseconds(rendered.length_ms())
-  #   "WEBVTT\n\n#{Video.Timestamp.zero()} --> #{total}\n#{cues}"
-  # end
+    # technically we drop the position for the last coordinate, but it shouldn't
+    # matter much
+    {_, cues} =
+      Enum.reduce(tl, {hd, []}, fn pt, {next, iolist} ->
+        bearing = Geo.CheapRuler.bearing(pt, next)
+
+        {pt,
+         [
+           pt.ts,
+           " --> ",
+           next.ts,
+           "\n",
+           to_string(pt.lat),
+           " ",
+           to_string(pt.lon),
+           " ",
+           to_string(approx(37)),
+           "\n\n" | iolist
+         ]}
+      end)
+
+    ["WEBVTT\n\n", cues]
+  end
+
+  defp format(coord) do
+    ts = Video.Timestamp.from_timed_point(coord)
+    lat = approx(coord.lat)
+    lon = approx(coord.lon)
+    %{lat: lat, lon: lon, ts: ts}
+  end
+
+  defp approx(val) do
+    Kernel.round(val * 10_000_000) / 10_000_000
+  end
 end
