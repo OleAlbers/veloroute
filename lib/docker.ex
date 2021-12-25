@@ -105,6 +105,8 @@ defmodule Docker do
       "docker",
       "run",
       "--rm",
+      "--gpus",
+      "all",
       "--tty",
       "--name",
       @container_name_detect
