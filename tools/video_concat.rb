@@ -169,3 +169,5 @@ Dir.mktmpdir("video_concat") do |temp_dir|
 
   ffmpeg_concat(concat, bar)
 end
+
+bar.finish

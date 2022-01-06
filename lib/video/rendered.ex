@@ -7,7 +7,6 @@ defmodule Video.Rendered do
 
   @concat_tool "./tools/video_concat.rb"
   @inaccurate_concat ["INACCURATE_CUTS=1", @concat_tool]
-  @anonymizing_concat ["ANONYMIZE=1", @concat_tool]
 
   import Video.Track, only: [valid_hash: 1]
 
@@ -62,19 +61,18 @@ defmodule Video.Rendered do
   """
   @spec render(t()) :: [binary()]
   def render(rendered) do
+    target_dir = Video.Path.target_rel_to_cwd(rendered.hash())
+    convert = ["ANONYMIZE=1", "./tools/video_convert_streamable.rb", target_dir]
+
     concat =
-      Enum.reduce(rendered.sources(), @anonymizing_concat, fn {path, from, to}, cmd ->
+      Enum.reduce(rendered.sources(), [@concat_tool], fn {path, from, to}, cmd ->
         path = Video.Path.source_rel_to_cwd(path)
         cmd ++ [path, from, to]
       end)
 
-    concat ++
-      [
-        "#{rendered.length_ms() / 1000.0}",
-        "|",
-        "./tools/video_convert_streamable.rb",
-        Video.Path.target_rel_to_cwd(rendered.hash())
-      ]
+    total_runtime = "#{rendered.length_ms() / 1000.0}"
+
+    [convert, concat, total_runtime]
   end
 
   @doc """
